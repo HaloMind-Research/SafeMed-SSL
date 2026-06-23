@@ -80,8 +80,6 @@ Latchan Chhetri - Dept. of AI & DS, Sikkim Manipal Institute of Technology (SMIT
 
 Aman Kumar - Dept. of AI & DS, SMIT
 
-Hrishikesh Das - Dept. of CSE, SMIT
-
  **Citation:**
  
 If you find this code or our methodology useful in your research, please consider citing our paper:
