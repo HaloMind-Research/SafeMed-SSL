@@ -24,12 +24,10 @@ Our approach combines **Monte Carlo dropout**, **normalized predictive entropy**
 
 The main finding: compared with FixMatch at a training confidence threshold of 0.80, the proposed method reduced the mean silent failure rate from **2.28% to 1.52%**—a **33.2% relative reduction**—while maintaining similar accuracy and AUC across six independent runs.
 
-> This is a research preprint and an experimental result on a public dataset. It is not evidence of clinical readiness.
-
 ## Paper
 
 **Trust, but Verify: Epistemic Uncertainty-Gated Pseudo-Labeling for Safer Semi-Supervised Malaria Screening**  
-Aman Kumar, Ayush Anand, and Latchan Chhetri  
+Aman Kumar, Ayush Anand, and Latchan Chhetri* (All Equal COntributors; Latchan Chhetri is the corresponding author)
 Halo Mind Research Group, India; Sikkim Manipal Institute of Technology, India  
 **bioRxiv (2026)** · [https://doi.org/10.64898/2026.10.13.758712](https://doi.org/10.64898/2026.10.13.758712)
 
