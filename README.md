@@ -144,11 +144,6 @@ If you refer to this work, please cite the bioRxiv preprint:
   url     = {https://doi.org/10.64898/2026.10.13.758712}
 }
 ```
-
-### Dataset reference
-
-Rajaraman, S. et al. “Pre-trained convolutional neural networks as feature extractors toward improved malaria parasite detection in thin blood smear images.” *PeerJ* 6:e4568 (2018). [https://doi.org/10.7717/peerj.4568](https://doi.org/10.7717/peerj.4568)
-
 ## Acknowledgements
 
 We sincerely thank Dr. Palash Ghosal for his teaching in biomedical image analysis, valuable advice, and insightful discussions that helped shape our understanding and interest in medical imaging.
