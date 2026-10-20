@@ -1,96 +1,155 @@
 <div align="center">
 
-# SafeMed-SSL: Uncertainty-Guided Semi-Supervised Learning for Safe Medical Image Classification
+# SafeMed-SSL
+### Uncertainty-Gated Semi-Supervised Learning for Safer Medical AI
 
-[![Framework](https://img.shields.io/badge/PyTorch-2.0-orange?style=for-the-badge&logo=pytorch)](https://pytorch.org/)
-[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
+[![PyTorch](https://img.shields.io/badge/PyTorch-Implementation-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
+[![Preprint](https://img.shields.io/badge/Preprint-bioRxiv-blue?style=for-the-badge)](https://doi.org/10.64898/2026.10.13.758712)
 
-*An official PyTorch implementation for robust and safe medical image classification in low-resource settings.*
+**Can a medical AI model learn from unlabelled images without becoming confidently wrong?**
+
+SafeMed-SSL explores this question through uncertainty-gated pseudo-labeling for semi-supervised malaria cell classification.
+
+📄 [Read the paper on bioRxiv](https://doi.org/10.64898/2026.10.13.758712) · 💻 [Explore the code](https://github.com/HaloMind-Research/SafeMed-SSL)
 
 </div>
 
 ---
 
-## Problem Statement
-In resource-constrained healthcare environments, expert medical image annotation is expensive and time-consuming. While Semi-Supervised Learning (SSL) reduces this burden, standard SSL methods (like FixMatch) suffer from **Silent Failures**—classifying ambiguous images incorrectly but with high confidence.
+## About the Project
 
-**Our Solution:** We introduce an **Uncertainty-Guided Safety Filter** that leverages Monte Carlo Dropout. By rejecting ambiguous pseudo-labels based on both confidence and uncertainty, we significantly reduce overconfident clinical errors.
+Medical image annotation takes time, expertise, and resources. In settings where trained specialists are limited, collecting large amounts of labelled data can be particularly challenging.
 
----
+Semi-supervised learning (SSL) offers one way to address this problem: train a model using a small labelled dataset alongside a larger collection of unlabelled images.
 
-##  Key Contributions
-- ** Dual-Path Architecture:** Seamlessly integrates standard Supervised Learning (20% data) with an Uncertainty-Guided SSL teacher-student model (80% unlabeled data).
-- ** Two-Layer Safety Mechanism:** Filters unreliable predictions using a strict criteria.
-- ** Low-Resource Optimized:** Built on a lightweight ResNet-18 backbone, making it highly suitable for edge deployment in rural clinics.
+There is a catch, though. Methods such as FixMatch use confidence thresholds to decide which predictions become pseudo-labels. When a model is confidently wrong, it can teach itself from an incorrect prediction.
+
+We study a simple but important question: **can uncertainty estimation help a model avoid learning from unreliable pseudo-labels?**
+
+Our approach combines Monte Carlo dropout, predictive entropy and confidence-weighted pseudo-labeling. The goal is to reduce high-confidence classification errors while retaining the data-efficiency benefits of semi-supervised learning.
+
+This repository accompanies our bioRxiv preprint on uncertainty-gated semi-supervised learning for malaria screening.
+
+## How It Works
+
+The proposed method uses two complementary checks before an unlabelled image contributes to the unsupervised training loss.
+
+1. **Estimate uncertainty.** We keep dropout active and obtain 10 stochastic predictions for an unlabelled image. Normalized predictive entropy is used to estimate uncertainty in the averaged prediction.
+
+2. **Filter unreliable predictions.** A pseudo-label is excluded when normalized predictive entropy is at least 0.2.
+
+3. **Weight accepted pseudo-labels.** A sigmoid-based confidence weighting scheme gives different weights to accepted predictions according to model confidence.
+
+4. **Learn from both data sources.** The model uses ordinary supervised cross-entropy on labelled images and an uncertainty-weighted consistency loss on unlabelled images.
+
+The experiments use an ImageNet-pretrained ResNet-18 backbone and weak/strong image augmentations.
+
+The aim is not simply to maximize classification accuracy. It is to investigate whether uncertainty-aware training can reduce errors that look trustworthy because the model assigns them high confidence.
+
+## Framework
 
 <div align="center">
-  <img src="final_architecture.drawio.png" alt="SafeMed-SSL Architecture Diagram" width="800"/>
-  <br>
-  <em>Figure 1: The SafeMed-SSL Framework. Unlabeled data passes through a safety filter before pseudo-labels are generated.</em>
+  <img src="final_architecture.drawio.png"
+       alt="SafeMed-SSL uncertainty-gated semi-supervised learning framework showing labelled and unlabelled data paths, Monte Carlo dropout, entropy filtering, and confidence-weighted pseudo-labeling"
+       width="900"/>
+  <p><em>Overview of the proposed training framework and its uncertainty-based pseudo-label filtering mechanism.</em></p>
 </div>
 
----
+## Experimental Setup
 
-## Results & Clinical Impact
+We evaluate the method on the public Malaria Cell Images dataset.
 
-We evaluated our framework on the task of Malaria Cell Classification. Our method outperforms standard SSL baselines by specifically targeting dangerous "silent failures."
+| Setting | Details |
+|---|---|
+| Task | Binary malaria cell classification |
+| Dataset | Malaria Cell Images |
+| Total images | 27,558 |
+| Parasitized images | 13,779 |
+| Uninfected images | 13,779 |
+| Input resolution | 128 × 128 pixels |
+| Data split | 70% training, 10% validation, 20% test |
+| Labelled portion | 20% of the training partition |
+| Unlabelled portion | Remaining 80% of the training partition |
+| Backbone | ImageNet-pretrained ResNet-18 |
+| Uncertainty estimation | 10 Monte Carlo dropout passes |
+| Independent runs | 6 random seeds |
 
-| Method | Accuracy | AUC | Silent Failure Rate (SFR) |
-| :--- | :---: | :---: | :---: |
-| Supervised Baseline (20% Labels) | 96.7% | 0.989 | 2.01% |
-| FixMatch (Standard SSL, τ=0.80) | 96.4% | 0.991 | 2.50% |
-| **Ours (SafeMed-SSL)** | **96.6%** | **0.991** | **1.77%** |
+The comparison includes a supervised baseline trained with the labelled subset, FixMatch with confidence thresholds of 0.95 and 0.80, and the proposed uncertainty-gated method.
 
-> **Impact:** We achieved a statistically significant **29.2% reduction in silent failures** ($p=0.0137$), directly preventing dangerous misdiagnoses.
+### Training Configuration
+
+The reported experiments use SGD with momentum 0.9, weight decay of 0.0005, an initial learning rate of 0.03 with cosine annealing, and 50 training epochs.
+
+For uncertainty-guided pseudo-labeling, the main settings are:
+
+- Dropout probability: 0.3
+- Monte Carlo samples: 10
+- Normalized predictive entropy threshold: 0.2
+- Minimum confidence parameter: 0.7
+- Sigmoid weighting parameter: 5.0
+- Unsupervised loss weight: 1.0
+
+See `FINAL.ipynb` for the notebook and experiment implementation.
+
+## Results
+
+Our primary comparison is against FixMatch with a confidence threshold of 0.80. This relaxed threshold provides a useful comparison because accepting more pseudo-labels can also introduce more confident mistakes.
+
+| Method | Accuracy | AUC | Silent Failure Rate |
+|---|---:|---:|---:|
+| Supervised baseline (20% labels) | 96.7 ± 0.5% | 0.989 ± 0.004 | 2.01 ± 0.42% |
+| FixMatch (threshold = 0.95) | 96.8 ± 0.4% | 0.992 ± 0.003 | 1.97 ± 0.38% |
+| FixMatch (threshold = 0.80) | 96.4 ± 0.5% | 0.991 ± 0.003 | 2.28 ± 0.47% |
+| **Ours: uncertainty-gated** | **96.6 ± 0.3%** | **0.991 ± 0.002** | **1.52 ± 0.61%** |
+
+*Values are reported as mean ± standard deviation across six independent runs.*
+
+### The Main Finding
+
+Compared with FixMatch at a threshold of 0.80, our method reduced the mean silent failure rate from 2.28% to 1.52%.
+
+That is a **33.2% relative reduction**, with a paired t-test reporting *t* = 4.29 and *p* = 0.0078 across the six runs.
+
+The proposed method also achieved a lower silent failure rate than the tuned FixMatch baseline in each of the six runs.
+
+Importantly, overall accuracy and AUC remained broadly comparable. The main improvement was in reducing confidently incorrect predictions, rather than producing a large increase in conventional classification metrics.
+
+### What Is a Silent Failure?
+
+In this study, a silent failure is a misclassification made with prediction confidence greater than 0.95.
+
+Accuracy and AUC are useful measures of overall predictive performance, but they do not by themselves show how often a model makes an incorrect prediction with high confidence. We therefore evaluate silent failure rate alongside these conventional metrics.
 
 <div align="center">
-  <img src="FINAL_PAPER_GRAPH_N6.jpeg" alt="Clinical Robustness Graph" width="600"/>
-  <br>
-  <em>Figure 2: Clinical Robustness. SafeMed-SSL (blue) maintains a consistently low failure rate across varying thresholds compared to standard methods (red).</em>
+  <img src="FINAL_PAPER_GRAPH_N6.jpeg"
+       alt="Per-seed silent failure rates comparing FixMatch at training threshold 0.80 with the proposed uncertainty-gated method"
+       width="750"/>
+  <p><em>Silent failure rates across the six random seeds. The proposed method has a lower rate than the tuned FixMatch baseline in all six runs.</em></p>
 </div>
-
----
 
 ## Dataset
-This project uses the **NIH Malaria Cell Images Dataset**.
-* **Total Images:** 27,558 (13,779 Parasitized / 13,779 Uninfected)
-* **Source:** [Download from Kaggle](https://www.kaggle.com/datasets/iarunava/cell-images-for-detecting-malaria)
 
-**Data Structure:**
-```
-data/
-└── malaria/
-    ├── Parasitized/
-    └── Uninfected/
-```
+We use the publicly available [Malaria Cell Images dataset on Kaggle](https://www.kaggle.com/datasets/iarunava/cell-images-for-detecting-malaria).
 
-**Quick Start:**
-1. Installation
-Clone the repository and install the required dependencies:
-```
-git clone [https://github.com/Latchan-Ch/SafeMed-SSL.git](https://github.com/Latchan-Ch/SafeMed-SSL.git)
+The dataset contains 27,558 cell images, split evenly between parasitized and uninfected cells.
+
+Download the dataset from its source and configure the dataset paths in the notebook to match your local directory structure.
+
+Please review the dataset's original terms and attribution requirements before reusing it.
+
+### An Important Evaluation Limitation
+
+The experiments split the data at the individual cell-image level, rather than at the patient level. Because multiple cell images may originate from the same patient or blood smear, images from the same source may occur in more than one partition.
+
+This means the absolute performance estimates may be optimistic. Although all methods were compared under the same split protocol, patient-level evaluation is needed to establish how well the results generalize to unseen patients.
+
+## Running the Notebook
+
+The main experiment notebook in this repository is `FINAL.ipynb`.
+
+Clone the repository:
+
+```bash
+git clone https://github.com/HaloMind-Research/SafeMed-SSL.git
 cd SafeMed-SSL
-```
-2. Training the Model
-3. Evaluate and Use
-
- **Authors:**
- 
-Latchan Chhetri - Dept. of AI & DS, Sikkim Manipal Institute of Technology (SMIT)
-
-Aman Kumar - Dept. of AI & DS, SMIT
-
- **Citation:**
- 
-If you find this code or our methodology useful in your research, please consider citing our paper:
-
-```
-Code snippet
-@inproceedings{chhetri2026safemed,
-  title={Uncertainty-Guided Semi-Supervised Learning for Safe Medical Image Classification in Low-Resource Settings},
-  author={Chhetri, Latchan and Kumar, Aman and Das, Hrishikesh},
-  booktitle={2026 International Conference on Sustainable AI for Social Impact and Global Development (SASIGD)},
-  year={2026},
-  organization={IEEE}
-}
-```
