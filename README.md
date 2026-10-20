@@ -1,155 +1,160 @@
 <div align="center">
 
-# SafeMed-SSL
-### Uncertainty-Gated Semi-Supervised Learning for Safer Medical AI
+# Trust, but Verify: Epistemic Uncertainty-Gated Pseudo-Labeling for Safer Semi-Supervised Malaria Screening
 
+**Code and experiment materials accompanying the bioRxiv preprint**
+
+[![bioRxiv](https://img.shields.io/badge/bioRxiv-Preprint-2B6CB0?style=for-the-badge)](https://doi.org/10.64898/2026.10.13.758712)
 [![PyTorch](https://img.shields.io/badge/PyTorch-Implementation-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
-[![Preprint](https://img.shields.io/badge/Preprint-bioRxiv-blue?style=for-the-badge)](https://doi.org/10.64898/2026.10.13.758712)
 
-**Can a medical AI model learn from unlabelled images without becoming confidently wrong?**
-
-SafeMed-SSL explores this question through uncertainty-gated pseudo-labeling for semi-supervised malaria cell classification.
-
-📄 [Read the paper on bioRxiv](https://doi.org/10.64898/2026.10.13.758712) · 💻 [Explore the code](https://github.com/HaloMind-Research/SafeMed-SSL)
+[**Read the paper**](https://doi.org/10.64898/2026.10.13.758712) · [**View this repository**](https://github.com/HaloMind-Research/SafeMed-SSL)
 
 </div>
 
 ---
 
-## About the Project
+## Overview
 
-Medical image annotation takes time, expertise, and resources. In settings where trained specialists are limited, collecting large amounts of labelled data can be particularly challenging.
+Medical image annotation takes time, expertise, and resources. Semi-supervised learning (SSL) can reduce the number of labels needed by learning from a small labelled set alongside a larger set of unlabelled images. However, a model can be confidently wrong. When an incorrect prediction is accepted as a pseudo-label, the model may learn from its own mistake.
 
-Semi-supervised learning (SSL) offers one way to address this problem: train a model using a small labelled dataset alongside a larger collection of unlabelled images.
+In **“Trust, but Verify,”** we investigate whether checking epistemic uncertainty before accepting pseudo-labels can reduce these high-confidence errors in malaria cell classification.
 
-There is a catch, though. Methods such as FixMatch use confidence thresholds to decide which predictions become pseudo-labels. When a model is confidently wrong, it can teach itself from an incorrect prediction.
+Our approach combines **Monte Carlo dropout**, **normalized predictive entropy**, and **confidence-weighted pseudo-labeling**. We evaluate it against a supervised baseline and FixMatch at two confidence thresholds on the public Malaria Cell Images dataset, using only 20% of the training partition's labels.
 
-We study a simple but important question: **can uncertainty estimation help a model avoid learning from unreliable pseudo-labels?**
+The main finding: compared with FixMatch at a training confidence threshold of 0.80, the proposed method reduced the mean silent failure rate from **2.28% to 1.52%**—a **33.2% relative reduction**—while maintaining similar accuracy and AUC across six independent runs.
 
-Our approach combines Monte Carlo dropout, predictive entropy and confidence-weighted pseudo-labeling. The goal is to reduce high-confidence classification errors while retaining the data-efficiency benefits of semi-supervised learning.
+> This is a research preprint and an experimental result on a public dataset. It is not evidence of clinical readiness.
 
-This repository accompanies our bioRxiv preprint on uncertainty-gated semi-supervised learning for malaria screening.
+## Paper
 
-## How It Works
+**Trust, but Verify: Epistemic Uncertainty-Gated Pseudo-Labeling for Safer Semi-Supervised Malaria Screening**  
+Aman Kumar, Ayush Anand, and Latchan Chhetri  
+Halo Mind Research Group, India; Sikkim Manipal Institute of Technology, India  
+**bioRxiv (2026)** · [https://doi.org/10.64898/2026.10.13.758712](https://doi.org/10.64898/2026.10.13.758712)
 
-The proposed method uses two complementary checks before an unlabelled image contributes to the unsupervised training loss.
+All three authors are marked as equal contributors in the preprint. Latchan Chhetri is the corresponding author.
 
-1. **Estimate uncertainty.** We keep dropout active and obtain 10 stochastic predictions for an unlabelled image. Normalized predictive entropy is used to estimate uncertainty in the averaged prediction.
+## How the Method Works
 
-2. **Filter unreliable predictions.** A pseudo-label is excluded when normalized predictive entropy is at least 0.2.
+The framework combines supervised learning on labelled images with an uncertainty-guided path for unlabelled images.
 
-3. **Weight accepted pseudo-labels.** A sigmoid-based confidence weighting scheme gives different weights to accepted predictions according to model confidence.
+1. **Generate stochastic predictions.** For each unlabelled image's weakly augmented view, the model runs 10 forward passes with dropout active.
+2. **Estimate uncertainty.** We average the stochastic predictions and calculate normalized predictive entropy as an estimate of predictive uncertainty.
+3. **Filter uncertain examples.** A pseudo-label is excluded from the unsupervised loss when normalized entropy is **at least 0.2**.
+4. **Weight accepted pseudo-labels.** Accepted predictions receive a sigmoid-based confidence weight, with a minimum-confidence parameter of **0.7** and transition parameter **5.0**.
+5. **Train using both data sources.** Labelled images contribute a supervised cross-entropy loss. Accepted pseudo-labels contribute an uncertainty-weighted consistency loss on strongly augmented views.
 
-4. **Learn from both data sources.** The model uses ordinary supervised cross-entropy on labelled images and an uncertainty-weighted consistency loss on unlabelled images.
+The backbone is an ImageNet-pretrained **ResNet-18**. In this study, the goal is not simply to increase accuracy; it is to reduce confidently incorrect predictions without losing the benefits of learning from unlabelled data.
 
-The experiments use an ImageNet-pretrained ResNet-18 backbone and weak/strong image augmentations.
-
-The aim is not simply to maximize classification accuracy. It is to investigate whether uncertainty-aware training can reduce errors that look trustworthy because the model assigns them high confidence.
-
-## Framework
+## Framework Diagram
 
 <div align="center">
-  <img src="final_architecture.drawio.png"
-       alt="SafeMed-SSL uncertainty-gated semi-supervised learning framework showing labelled and unlabelled data paths, Monte Carlo dropout, entropy filtering, and confidence-weighted pseudo-labeling"
-       width="900"/>
-  <p><em>Overview of the proposed training framework and its uncertainty-based pseudo-label filtering mechanism.</em></p>
+  <img src="final_architecture.drawio.png" alt="Overview of the uncertainty-guided semi-supervised learning framework, including labelled and unlabelled data paths, Monte Carlo dropout, entropy filtering and confidence-weighted pseudo-labels" width="900" />
+  <p><em>Figure 1. Overview of the proposed uncertainty-guided semi-supervised learning framework.</em></p>
 </div>
 
 ## Experimental Setup
 
-We evaluate the method on the public Malaria Cell Images dataset.
-
-| Setting | Details |
+| Setting | Details reported in the paper |
 |---|---|
 | Task | Binary malaria cell classification |
-| Dataset | Malaria Cell Images |
+| Dataset | Malaria Cell Images dataset |
 | Total images | 27,558 |
-| Parasitized images | 13,779 |
-| Uninfected images | 13,779 |
-| Input resolution | 128 × 128 pixels |
+| Parasitized / uninfected | 13,779 / 13,779 |
+| Input size | 128 × 128 pixels |
 | Data split | 70% training, 10% validation, 20% test |
-| Labelled portion | 20% of the training partition |
-| Unlabelled portion | Remaining 80% of the training partition |
+| Labels available during training | 20% of the training partition |
+| Unlabelled training data | Remaining 80% of the training partition |
 | Backbone | ImageNet-pretrained ResNet-18 |
-| Uncertainty estimation | 10 Monte Carlo dropout passes |
+| Monte Carlo dropout passes | 10 |
+| Normalized entropy cutoff | 0.2 |
 | Independent runs | 6 random seeds |
 
-The comparison includes a supervised baseline trained with the labelled subset, FixMatch with confidence thresholds of 0.95 and 0.80, and the proposed uncertainty-gated method.
+The data were randomly split **at the cell-image level**, not at the patient level. This is an important limitation discussed below.
 
-### Training Configuration
+### Training configuration
 
-The reported experiments use SGD with momentum 0.9, weight decay of 0.0005, an initial learning rate of 0.03 with cosine annealing, and 50 training epochs.
+The paper reports SGD with momentum **0.9**, weight decay **5 × 10⁻⁴**, initial learning rate **0.03** with cosine annealing, and **50 epochs**. The labelled and unlabelled batch sizes are **32** and **224**, respectively. Weak augmentation uses random horizontal flips and crops; strong augmentation additionally uses colour jitter and affine transformations.
 
-For uncertainty-guided pseudo-labeling, the main settings are:
-
-- Dropout probability: 0.3
-- Monte Carlo samples: 10
-- Normalized predictive entropy threshold: 0.2
-- Minimum confidence parameter: 0.7
-- Sigmoid weighting parameter: 5.0
-- Unsupervised loss weight: 1.0
-
-See `FINAL.ipynb` for the notebook and experiment implementation.
+The uncertainty-guided configuration uses dropout probability **0.3**, minimum-confidence parameter **0.7**, sigmoid transition parameter **5.0**, normalized entropy cutoff **0.2**, and unsupervised loss weight **1.0**.
 
 ## Results
 
-Our primary comparison is against FixMatch with a confidence threshold of 0.80. This relaxed threshold provides a useful comparison because accepting more pseudo-labels can also introduce more confident mistakes.
+The paper reports mean ± standard deviation over six independent runs with different random seeds.
 
-| Method | Accuracy | AUC | Silent Failure Rate |
+| Method | Accuracy | AUC | Silent failure rate (SFR) |
 |---|---:|---:|---:|
 | Supervised baseline (20% labels) | 96.7 ± 0.5% | 0.989 ± 0.004 | 2.01 ± 0.42% |
-| FixMatch (threshold = 0.95) | 96.8 ± 0.4% | 0.992 ± 0.003 | 1.97 ± 0.38% |
-| FixMatch (threshold = 0.80) | 96.4 ± 0.5% | 0.991 ± 0.003 | 2.28 ± 0.47% |
-| **Ours: uncertainty-gated** | **96.6 ± 0.3%** | **0.991 ± 0.002** | **1.52 ± 0.61%** |
+| FixMatch (training threshold = 0.95) | 96.8 ± 0.4% | 0.992 ± 0.003 | 1.97 ± 0.38% |
+| FixMatch (training threshold = 0.80) | 96.4 ± 0.5% | 0.991 ± 0.003 | 2.28 ± 0.47% |
+| **Proposed uncertainty-gated method** | **96.6 ± 0.3%** | **0.991 ± 0.002** | **1.52 ± 0.61%** |
 
-*Values are reported as mean ± standard deviation across six independent runs.*
+### Main result
 
-### The Main Finding
+Against FixMatch trained with the relaxed threshold of 0.80, the proposed method lowered mean SFR from **2.28% to 1.52%**, a **33.2% relative reduction**. The paired t-test across the six runs reported **t = 4.29, p = 0.0078**. The SFR was lower for the proposed method in all six runs.
 
-Compared with FixMatch at a threshold of 0.80, our method reduced the mean silent failure rate from 2.28% to 1.52%.
-
-That is a **33.2% relative reduction**, with a paired t-test reporting *t* = 4.29 and *p* = 0.0078 across the six runs.
-
-The proposed method also achieved a lower silent failure rate than the tuned FixMatch baseline in each of the six runs.
-
-Importantly, overall accuracy and AUC remained broadly comparable. The main improvement was in reducing confidently incorrect predictions, rather than producing a large increase in conventional classification metrics.
-
-### What Is a Silent Failure?
-
-In this study, a silent failure is a misclassification made with prediction confidence greater than 0.95.
-
-Accuracy and AUC are useful measures of overall predictive performance, but they do not by themselves show how often a model makes an incorrect prediction with high confidence. We therefore evaluate silent failure rate alongside these conventional metrics.
+The SFR evaluation threshold is **0.95**: a silent failure is a wrong prediction made with confidence above 0.95. The statistical significance test reported in the paper is for the comparison against FixMatch with training threshold 0.80. The comparison with FixMatch trained at threshold 0.95 had a lower mean SFR for the proposed method too, but that comparison was not reported as statistically tested.
 
 <div align="center">
-  <img src="FINAL_PAPER_GRAPH_N6.jpeg"
-       alt="Per-seed silent failure rates comparing FixMatch at training threshold 0.80 with the proposed uncertainty-gated method"
-       width="750"/>
-  <p><em>Silent failure rates across the six random seeds. The proposed method has a lower rate than the tuned FixMatch baseline in all six runs.</em></p>
+  <img src="FINAL_PAPER_GRAPH_N6.jpeg" alt="Per-seed silent failure rates comparing FixMatch trained with a confidence threshold of 0.80 and the proposed uncertainty-gated method" width="750" />
+  <p><em>Figure 2. Silent failure rate at evaluation confidence threshold 0.95 across six random seeds.</em></p>
 </div>
 
 ## Dataset
 
-We use the publicly available [Malaria Cell Images dataset on Kaggle](https://www.kaggle.com/datasets/iarunava/cell-images-for-detecting-malaria).
+The study uses the publicly available [Malaria Cell Images dataset on Kaggle](https://www.kaggle.com/datasets/iarunava/cell-images-for-detecting-malaria), containing 27,558 cell images: 13,779 parasitized and 13,779 uninfected.
 
-The dataset contains 27,558 cell images, split evenly between parasitized and uninfected cells.
+The experiment resizes images to 128 × 128 and uses a 70:10:20 random split for training, validation and testing. Only 20% of the training partition's labels are exposed to the learning procedure; the remaining training images are treated as unlabelled.
 
-Download the dataset from its source and configure the dataset paths in the notebook to match your local directory structure.
-
-Please review the dataset's original terms and attribution requirements before reusing it.
-
-### An Important Evaluation Limitation
-
-The experiments split the data at the individual cell-image level, rather than at the patient level. Because multiple cell images may originate from the same patient or blood smear, images from the same source may occur in more than one partition.
-
-This means the absolute performance estimates may be optimistic. Although all methods were compared under the same split protocol, patient-level evaluation is needed to establish how well the results generalize to unseen patients.
+Please consult the dataset's original publication and terms when using the data in other work.
 
 ## Running the Notebook
 
-The main experiment notebook in this repository is `FINAL.ipynb`.
-
-Clone the repository:
+The repository includes the experiment notebook `FINAL.ipynb` and the figures shown above. To get the repository locally:
 
 ```bash
 git clone https://github.com/HaloMind-Research/SafeMed-SSL.git
 cd SafeMed-SSL
+```
+
+Open `FINAL.ipynb` in Jupyter or another compatible notebook environment. Before running it, inspect the notebook for the expected dataset paths and package imports, and configure your local environment accordingly. This README does not assume a separate command-line training script or a pinned dependency file.
+
+## Limitations and Responsible Use
+
+The reported results should be interpreted in light of the study's limitations:
+
+- **Cell-image rather than patient-level splitting.** Cells from the same patient or blood smear may appear in multiple partitions, potentially making absolute performance estimates optimistic. The paper calls for validation using strict patient-level splitting.
+- **One dataset and a binary task.** Further evaluation on other datasets, settings and diagnostic tasks is needed.
+- **Cropped cell images rather than whole slides.** The study does not validate the method on whole-slide images in a clinical workflow.
+- **No external-site validation.** Generalization across laboratories, staining protocols, imaging hardware and populations remains untested.
+- **Additional inference cost.** Ten Monte Carlo dropout passes require more computation than a single forward pass.
+
+The results suggest that uncertainty-aware pseudo-label filtering is worth further investigation for semi-supervised medical image classification. They do not establish clinical utility or readiness for deployment. Patient-level and external validation, including whole-slide evaluation, remain necessary.
+
+## Citation
+
+If you refer to this work, please cite the bioRxiv preprint:
+
+```bibtex
+@article{Kumar2026.10.13.758712,
+  author  = {Kumar, Aman and Anand, Ayush and Chhetri, Latchan},
+  title   = {Trust, but Verify: Epistemic Uncertainty-Gated Pseudo-Labeling for Safer Semi-Supervised Malaria Screening},
+  journal = {bioRxiv},
+  year    = {2026},
+  doi     = {10.64898/2026.10.13.758712},
+  url     = {https://doi.org/10.64898/2026.10.13.758712}
+}
+```
+
+### Dataset reference
+
+Rajaraman, S. et al. “Pre-trained convolutional neural networks as feature extractors toward improved malaria parasite detection in thin blood smear images.” *PeerJ* 6:e4568 (2018). [https://doi.org/10.7717/peerj.4568](https://doi.org/10.7717/peerj.4568)
+
+## Acknowledgements
+
+We sincerely thank Dr. Palash Ghosal for his teaching in biomedical image analysis, valuable advice, and insightful discussions that helped shape our understanding and interest in medical imaging.
+
+## License
+
+This repository is distributed under the MIT License. See [LICENSE](LICENSE) for details.
