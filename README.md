@@ -27,7 +27,7 @@ The main finding: compared with FixMatch at a training confidence threshold of 0
 ## Paper
 
 **Trust, but Verify: Epistemic Uncertainty-Gated Pseudo-Labeling for Safer Semi-Supervised Malaria Screening**  
-Aman Kumar, Ayush Anand, and Latchan Chhetri* (All Equal COntributors; Latchan Chhetri is the corresponding author)
+Aman Kumar, Ayush Anand, and Latchan Chhetri* (All Equal Contributors; Latchan Chhetri is the corresponding author)
 Halo Mind Research Group, India; Sikkim Manipal Institute of Technology, India  
 **bioRxiv (2026)** · [https://doi.org/10.64898/2026.10.13.758712](https://doi.org/10.64898/2026.10.13.758712)
 
