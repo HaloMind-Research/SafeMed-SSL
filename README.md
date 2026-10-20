@@ -147,7 +147,3 @@ If you refer to this work, please cite the bioRxiv preprint:
 ## Acknowledgements
 
 We sincerely thank Dr. Palash Ghosal for his teaching in biomedical image analysis, valuable advice, and insightful discussions that helped shape our understanding and interest in medical imaging.
-
-## License
-
-This repository is distributed under the MIT License. See [LICENSE](LICENSE) for details.
