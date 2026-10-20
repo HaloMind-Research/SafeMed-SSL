@@ -97,7 +97,7 @@ Against FixMatch trained with the relaxed threshold of 0.80, the proposed method
 The SFR evaluation threshold is **0.95**: a silent failure is a wrong prediction made with confidence above 0.95. The statistical significance test reported in the paper is for the comparison against FixMatch with training threshold 0.80. The comparison with FixMatch trained at threshold 0.95 had a lower mean SFR for the proposed method too, but that comparison was not reported as statistically tested.
 
 <div align="center">
-  <img src="FINAL_PAPER_GRAPH_N6.jpeg" alt="Per-seed silent failure rates comparing FixMatch trained with a confidence threshold of 0.80 and the proposed uncertainty-gated method" width="750" />
+  <img src="FINAL_PAPER_GRAPH_N6.png" alt="Per-seed silent failure rates comparing FixMatch trained with a confidence threshold of 0.80 and the proposed uncertainty-gated method" width="750" />
   <p><em>Figure 2. Silent failure rate at evaluation confidence threshold 0.95 across six random seeds.</em></p>
 </div>
 
